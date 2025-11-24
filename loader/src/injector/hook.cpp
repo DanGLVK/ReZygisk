@@ -752,18 +752,17 @@ bool load_modules_only() {
   for (size_t i = 0; i < ms.modules_count; i++) {
     char *lib_path = ms.modules[i];
 
-    void *handle = dlopen(lib_path, RTLD_NOW);
-    if (!handle) {
-      LOGE("Failed to load module [%s]: %s", lib_path, dlerror());
+    if (!csoloader_load(&zygisk_modules[zygisk_module_length].lib, lib_path)) {
+      LOGE("Failed to load module [%s]", lib_path);
 
       continue;
     }
 
-    void *entry = dlsym(handle, "zygisk_module_entry");
+    void *entry = csoloader_get_symbol(&zygisk_modules[zygisk_module_length].lib, "zygisk_module_entry");
     if (!entry) {
-      LOGE("Failed to find entry point in module [%s]: %s", lib_path, dlerror());
+      LOGE("Failed to find entry point in module [%s]", lib_path);
 
-      dlclose(handle);
+      csoloader_unload(&zygisk_modules[zygisk_module_length].lib);
 
       continue;
     }
