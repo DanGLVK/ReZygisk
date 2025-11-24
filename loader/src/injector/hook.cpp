@@ -1111,6 +1111,8 @@ void hook_functions() {
         PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, fork, false);
         PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, strdup, false);
         PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, property_get, false);
+        PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, setmntent, false);
+        PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, endmntent, false);
 
         if (hook_commit(map_infos)) {
             LOGW("Hooked without ReopenOrDetach hook! Umounting overlays will cause problems");
