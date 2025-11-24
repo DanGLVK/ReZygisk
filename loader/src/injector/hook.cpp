@@ -771,32 +771,16 @@ bool load_modules_only() {
     zygisk_modules[zygisk_module_length].api.register_module = rezygisk_module_register;
     zygisk_modules[zygisk_module_length].api.impl = (void *)zygisk_module_length;
 
-    zygisk_modules[zygisk_module_length].handle = handle;
     zygisk_modules[zygisk_module_length].zygisk_module_entry = (void (*)(void *, void *))entry;
 
-    zygisk_modules[zygisk_module_length].base = solist_get_base(entry);
-    zygisk_modules[zygisk_module_length].size = solist_get_size(entry);
-
-    zygisk_modules[zygisk_module_length].deconstructors = solist_get_deconstructors(entry);
-
-    LOGD("Loaded module [%s]. Entry: %p, Base: %p, Size: %zu, Deconstructors: fini_func=%p, fini_array=%p (size: %zu)",
+    LOGD("Loaded module [%s]. Entry: %p",
          lib_path,
-         entry,
-         zygisk_modules[zygisk_module_length].base,
-         zygisk_modules[zygisk_module_length].size,
-         zygisk_modules[zygisk_module_length].deconstructors.fini_func,
-         zygisk_modules[zygisk_module_length].deconstructors.fini_array,
-         zygisk_modules[zygisk_module_length].deconstructors.fini_array_size);
+         entry);
 
     zygisk_modules[zygisk_module_length].unload = false;
 
-    /* INFO: Early removal to avoid gaps in solist */
-    solist_drop_so_path(entry, false);
-
     zygisk_module_length++;
   }
-
-  solist_reset_counters(zygisk_module_length, zygisk_module_length);
 
   free_modules(&ms);
 
@@ -823,25 +807,10 @@ void ZygiskContext::run_modules_post() {
         if (flags[APP_SPECIALIZE]) rezygisk_module_call_post_app_specialize(m, args.app);
         else if (flags[SERVER_FORK_AND_SPECIALIZE]) rezygisk_module_call_post_server_specialize(m, args.server);
 
-        /* INFO: If module is unloaded by dlclose, there's no need to
-                   hide it from soinfo manually. */
         if (!m->unload) continue;
 
-        /* INFO: Deconstructors are called in the inverted order, and following fini array then fini
-                    function order. It must not change. */
-        for (size_t j = m->deconstructors.fini_array_size; j > 0; j--) {
-            void (*destructor)(void) = m->deconstructors.fini_array[j - 1];
-            if (destructor) {
-                LOGD("Calling destructor %p for module %p", (void *)destructor, (void *)m->zygisk_module_entry);
-
-                destructor();
-            }
-        }
-
-        if (m->deconstructors.fini_func) m->deconstructors.fini_func();
-
-        if (munmap(m->base, m->size) == -1) {
-            PLOGE("Failed to unmap module library at %p with size %zu", m->base, m->size);
+        if (csoloader_unload(&m->lib) == false) {
+            LOGE("Failed to unload module library");
 
             continue;
         }
