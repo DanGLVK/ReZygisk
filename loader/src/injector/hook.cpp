@@ -1133,8 +1133,8 @@ void hook_functions() {
     PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, fork, false);
     PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, strdup, false);
     PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, property_get, false);
-    PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, setmntent);
-    PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, endmntent);
+    PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, setmntent, false);
+    PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, endmntent, false);
     PLT_HOOK_REGISTER(android_runtime_dev, android_runtime_inode, _ZNK18FileDescriptorInfo14ReopenOrDetach, true);
     
     if (!hook_commit(map_infos)) {
