@@ -111,7 +111,7 @@ static void load_modules(struct Context *restrict context) {
       continue;
     }
 
-    context->modules = realloc(context->modules, (size_t)((context->len + 1) * sizeof(struct Module)));
+    context->modules = realloc(context->modules, (context->len + 1) * sizeof(struct Module));
     if (context->modules == NULL) {
       LOGE("Failed reallocating memory for modules.\n");
 
@@ -119,6 +119,11 @@ static void load_modules(struct Context *restrict context) {
     }
 
     context->modules[context->len].name = strdup(name);
+    if (context->modules[context->len].name == NULL) {
+      LOGE("Failed to strdup for the module `%s`: %s\n", name, strerror(errno));
+
+      return;
+    }
     context->modules[context->len].lib_fd = lib_fd;
     context->modules[context->len].companion = -1;
     context->len++;
@@ -251,7 +256,7 @@ static int spawn_companion(char *restrict argv[], char *restrict name, int lib_f
 
 /* WARNING: Dynamic memory based */
 void zygiskd_start(char *restrict argv[]) {
-  /* INFO: When implementation is None or Multiple, it won't set the values 
+  /* INFO: When implementation is None or Multiple, it won't set the values
             for the context, causing it to have garbage values. In response
             to that, "= { 0 }" is used to ensure that the values are clean. */
   struct Context context = { 0 };
@@ -269,7 +274,7 @@ void zygiskd_start(char *restrict argv[]) {
 
     uint32_t msg_len = (uint32_t)strlen(msg);
     unix_datagram_sendto(CONTROLLER_SOCKET, &msg_len, sizeof(msg_len));
-    unix_datagram_sendto(CONTROLLER_SOCKET, (void *)msg, msg_len);
+    unix_datagram_sendto(CONTROLLER_SOCKET, msg, msg_len);
 
     exit(EXIT_FAILURE);
   } else {
@@ -438,7 +443,7 @@ void zygiskd_start(char *restrict argv[]) {
         ASSURE_SIZE_WRITE_BREAK("GetInfo", "flags", ret, sizeof(flags));
 
         /* TODO: Use pid_t */
-        uint32_t pid = (uint32_t)getpid();    
+        uint32_t pid = (uint32_t)getpid();
         ret = write_uint32_t(client_fd, pid);
         ASSURE_SIZE_WRITE_BREAK("GetInfo", "pid", ret, sizeof(pid));
 
@@ -515,7 +520,7 @@ void zygiskd_start(char *restrict argv[]) {
           }
         }
 
-        /* 
+        /*
           INFO: Companion already exists or was created. In any way,
                  it should be in the while loop to receive fds now,
                  so just sending the file descriptor of the client is

@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdio.h>
 #include <sys/types.h>
 
 #include "constants.h"
@@ -13,15 +14,15 @@
 
 #define LOGI(...)                                              \
   __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__); \
-  printf(__VA_ARGS__);
+  printf(__VA_ARGS__)
 
 #define LOGW(...)                                                \
   __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__);   \
-  printf(__VA_ARGS__);
+  printf(__VA_ARGS__)
 
 #define LOGE(...)                                                \
   __android_log_print(ANDROID_LOG_ERROR , LOG_TAG, __VA_ARGS__); \
-  printf(__VA_ARGS__);
+  printf(__VA_ARGS__)
 
 #define ASSURE_SIZE_WRITE(area_name, subarea_name, sent_size, expected_size)                                     \
   if (sent_size != (ssize_t)(expected_size)) {                                                                   \
@@ -80,11 +81,11 @@ void get_property(const char *name, char *restrict output);
 
 void set_socket_create_context(const char *restrict context);
 
-void unix_datagram_sendto(const char *restrict path, void *restrict buf, size_t len);
+void unix_datagram_sendto(const char *restrict path, const void *restrict buf, size_t len);
 
 int chcon(const char *path, const char *restrict context);
 
-int unix_listener_from_path(char *path);
+int unix_listener_from_path(const char *path);
 
 ssize_t write_fd(int fd, int sendfd);
 int read_fd(int fd);

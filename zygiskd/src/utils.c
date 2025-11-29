@@ -115,7 +115,7 @@ static void get_current_attr(char *restrict output, size_t size) {
   fclose(current);
 }
 
-void unix_datagram_sendto(const char *restrict path, void *restrict buf, size_t len) {
+void unix_datagram_sendto(const char *restrict path, const void *restrict buf, size_t len) {
   char current_attr[PATH_MAX];
   get_current_attr(current_attr, sizeof(current_attr));
 
@@ -157,7 +157,7 @@ int chcon(const char *restrict path, const char *context) {
   return system(command);
 }
 
-int unix_listener_from_path(char *restrict path) {
+int unix_listener_from_path(const char *restrict path) {
   if (remove(path) == -1 && errno != ENOENT) {
     LOGE("remove: %s\n", strerror(errno));
 
@@ -200,7 +200,7 @@ int unix_listener_from_path(char *restrict path) {
 ssize_t write_fd(int fd, int sendfd) {
   char cmsgbuf[CMSG_SPACE(sizeof(int))];
   char buf[1] = { 0 };
-  
+
   struct iovec iov = {
     .iov_base = buf,
     .iov_len = 1
@@ -312,7 +312,7 @@ ssize_t read_string(int fd, char *restrict buf, size_t buf_size) {
 
     return -1;
   }
-  
+
   if (str_len > buf_size - 1) {
     LOGE("Failed to read string: Buffer is too small (%zu > %zu - 1).\n", str_len, buf_size);
 
@@ -457,17 +457,17 @@ struct mountinfo {
   unsigned int id;
   unsigned int parent;
   dev_t device;
-  const char *root;
-  const char *target;
-  const char *vfs_option;
+  char *root;
+  char *target;
+  char *vfs_option;
   struct {
       unsigned int shared;
       unsigned int master;
       unsigned int propagate_from;
   } optional;
-  const char *type;
-  const char *source;
-  const char *fs_option;
+  char *type;
+  char *source;
+  char *fs_option;
 };
 
 struct mountinfos {
@@ -487,15 +487,15 @@ char *strndup(const char *restrict str, size_t length) {
 
 void free_mounts(struct mountinfos *restrict mounts) {
   for (size_t i = 0; i < mounts->length; i++) {
-    free((void *)mounts->mounts[i].root);
-    free((void *)mounts->mounts[i].target);
-    free((void *)mounts->mounts[i].vfs_option);
-    free((void *)mounts->mounts[i].type);
-    free((void *)mounts->mounts[i].source);
-    free((void *)mounts->mounts[i].fs_option);
+    free(mounts->mounts[i].root);
+    free(mounts->mounts[i].target);
+    free(mounts->mounts[i].vfs_option);
+    free(mounts->mounts[i].type);
+    free(mounts->mounts[i].source);
+    free(mounts->mounts[i].fs_option);
   }
 
-  free((void *)mounts->mounts);
+  free(mounts->mounts);
 }
 
 bool parse_mountinfo(const char *restrict pid, struct mountinfos *restrict mounts) {
@@ -611,15 +611,15 @@ bool parse_mountinfo(const char *restrict pid, struct mountinfos *restrict mount
     continue;
 
     cleanup_source:
-      free((void *)mounts->mounts[i].source);
+      free(mounts->mounts[i].source);
     cleanup_type:
-      free((void *)mounts->mounts[i].type);
+      free(mounts->mounts[i].type);
     cleanup_vfs_option:
-      free((void *)mounts->mounts[i].vfs_option);
+      free(mounts->mounts[i].vfs_option);
     cleanup_target:
-      free((void *)mounts->mounts[i].target);
+      free(mounts->mounts[i].target);
     cleanup_root:
-      free((void *)mounts->mounts[i].root);
+      free(mounts->mounts[i].root);
     cleanup_mount_allocs:
       fclose(mountinfo);
       free_mounts(mounts);

@@ -4,9 +4,7 @@
 #include "solist.h"
 #include "zygisk.hpp"
 
-using namespace std;
-
-void *start_addr = nullptr;
+void *start_addr = NULL;
 size_t block_size = 0;
 
 extern "C" [[gnu::visibility("default")]]
@@ -25,8 +23,8 @@ void entry(void *addr, size_t size) {
     LOGD("start plt hooking");
     hook_functions();
 
-    solist_drop_so_path(addr, true);
-    solist_reset_counters(1, 1);
+    solist_drop_so_path(addr);
+    solist_reset_counters(1);
 
     struct kernel_version version = parse_kversion();
     if (version.major > 3 || (version.major == 3 && version.minor >= 8)) {

@@ -14,6 +14,11 @@
 
 #include "kernelsu.h"
 
+const char *ksu_manager_paths[] = {
+  "/data/user_de/0/me.weishu.kernelsu",
+  "/data/user_de/0/com.rifsxd.ksunext",
+};
+
 /* INFO: It would be presumed it is a unsigned int,
            so we need to cast it to signed int to
            avoid any potential UB.
@@ -65,7 +70,7 @@ void ksu_get_existence(struct root_impl_state *state) {
     int reply_ok = 0;
 
     int version = 0;
-    prctl((signed int)KSU_INSTALL_MAGIC1, CMD_GET_VERSION, &version, 0, &reply_ok);
+    prctl(KSU_INSTALL_MAGIC1, CMD_GET_VERSION, &version, 0, &reply_ok);
 
     if (version == 0) state->state = Abnormal;
     else if (version >= MIN_KSU_VERSION) {
@@ -87,17 +92,17 @@ void ksu_get_existence(struct root_impl_state *state) {
       state->state = Supported;
 
       char mode[16] = { 0 };
-      prctl((signed int)KSU_INSTALL_MAGIC1, CMD_HOOK_MODE, mode, NULL, &reply_ok);
+      prctl(KSU_INSTALL_MAGIC1, CMD_HOOK_MODE, mode, NULL, &reply_ok);
 
       if (mode[0] != '\0') state->variant = KNext;
       else state->variant = KOfficial;
 
       variant = state->variant;
 
-      /* INFO: CMD_GET_MANAGER_UID is a KernelSU Next feature, however we won't 
+      /* INFO: CMD_GET_MANAGER_UID is a KernelSU Next feature, however we won't
                 limit to KernelSU Next only in case other forks wish to implement
                 it. */
-      prctl((signed int)KSU_INSTALL_MAGIC1, CMD_GET_MANAGER_UID, NULL, NULL, &reply_ok);
+      prctl(KSU_INSTALL_MAGIC1, CMD_GET_MANAGER_UID, NULL, NULL, &reply_ok);
 
       if (reply_ok == KSU_INSTALL_MAGIC1) {
         LOGI("KernelSU implementation supports CMD_GET_MANAGER_UID.\n");
@@ -139,7 +144,7 @@ bool ksu_uid_granted_root(uid_t uid) {
     return granted;
   }
 
-  struct ksu_uid_granted_root_cmd cmd = { 
+  struct ksu_uid_granted_root_cmd cmd = {
     .uid = uid,
     .granted = 0
   };
@@ -194,10 +199,7 @@ bool ksu_uid_is_manager(uid_t uid) {
       return uid == manager_uid;
     }
 
-    const char *manager_path = NULL;
-    if (variant == KOfficial) manager_path = "/data/user_de/0/me.weishu.kernelsu";
-    else if (variant == KNext) manager_path = "/data/user_de/0/com.rifsxd.ksunext";
-
+    const char *manager_path = ksu_manager_paths[variant];
     struct stat s;
     if (stat(manager_path, &s) == -1) {
       if (errno != ENOENT) {
@@ -211,7 +213,7 @@ bool ksu_uid_is_manager(uid_t uid) {
     return s.st_uid == uid;
   }
 
-  /* INFO: If it uses ioctl, it already has support to get managet UID operation */
+  /* INFO: If it uses ioctl, it already has support to get manager UID operation */
   struct ksu_get_manager_uid_cmd cmd;
   if (ioctl(ksu_fd, KSU_IOCTL_GET_MANAGER_UID, &cmd) == -1) {
     LOGE("Failed to ioctl KSU_IOCTL_GET_MANAGER_UID: %s\n", strerror(errno));

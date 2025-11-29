@@ -23,7 +23,7 @@ void apatch_get_existence(struct root_impl_state *state) {
     return;
   }
 
-  char *PATH = getenv("PATH");
+  const char *PATH = getenv("PATH");
   if (PATH == NULL) {
     LOGE("Failed to get PATH environment variable: %s\n", strerror(errno));
     errno = 0;
@@ -103,7 +103,7 @@ bool _apatch_get_package_config(struct packages_config *restrict config) {
     return false;
   }
 
-  while (fgets(line, sizeof(line), fp) != NULL) { 
+  while (fgets(line, sizeof(line), fp) != NULL) {
     struct package_config *tmp_configs = realloc(config->configs, (config->size + 1) * sizeof(struct package_config));
     if (tmp_configs == NULL) {
       LOGE("Failed to realloc APatch config struct: %s\n", strerror(errno));
@@ -115,17 +115,28 @@ bool _apatch_get_package_config(struct packages_config *restrict config) {
     }
     config->configs = tmp_configs;
 
-    config->configs[config->size].process = strdup(strtok(line, ","));
+    char *save_ptr = NULL;
+    const char *process_str = strtok_r(line, ",", &save_ptr);
+    if (process_str == NULL) continue;
 
-    char *exclude_str = strtok(NULL, ",");
+    const char *exclude_str = strtok_r(NULL, ",", &save_ptr);
     if (exclude_str == NULL) continue;
 
-    char *allow_str = strtok(NULL, ",");
+    const char *allow_str = strtok_r(NULL, ",", &save_ptr);
     if (allow_str == NULL) continue;
 
-    char *uid_str = strtok(NULL, ",");
+    const char *uid_str = strtok_r(NULL, ",", &save_ptr);
     if (uid_str == NULL) continue;
 
+    config->configs[config->size].process = strdup(process_str);
+    if (config->configs[config->size].process == NULL) {
+      LOGE("Failed to strdup for the process `%s`: %s\n", process_str, strerror(errno));
+
+      _apatch_free_package_config(config);
+      fclose(fp);
+
+      return false;
+    }
     config->configs[config->size].uid = (uid_t)atoi(uid_str);
     config->configs[config->size].root_granted = strcmp(allow_str, "1") == 0;
     config->configs[config->size].umount_needed = strcmp(exclude_str, "1") == 0;
