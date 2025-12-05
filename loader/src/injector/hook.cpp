@@ -311,7 +311,7 @@ DCL_HOOK_FUNC(FILE *, setmntent, const char *filename, int type) {
             _exit(EXIT_FAILURE);
         }
 
-        update_mnt_ns(Clean, false, true);
+        update_mnt_ns(Mounted, false, true);
 
         _exit(EXIT_SUCCESS);
     }
